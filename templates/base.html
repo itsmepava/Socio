@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Membership Platform{% endblock %}</title>
+<style>body{font:16px system-ui,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem;color:#17202a}nav{display:flex;gap:1rem;border-bottom:1px solid #ddd;padding-bottom:1rem}main{margin-top:2rem}label{display:block;margin:.8rem 0 .2rem}input,textarea,select{font:inherit;padding:.5rem;max-width:100%;width:28rem}button{font:inherit;padding:.5rem .8rem;margin:.5rem 0;cursor:pointer}.flash{padding:.7rem;background:#eef5ff;margin:.5rem 0}.error{background:#ffecec}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ddd;padding:.6rem;text-align:left}.muted{color:#5a6570}</style></head>
+<body><nav><a href="{{ url_for('index') }}">Membership Platform</a>{% if g.user %}<span>{{ g.user.email }} ({{ g.user.role|replace('_',' ') }})</span><form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button>Sign out</button></form>{% else %}<a href="{{ url_for('login') }}">Sign in</a><a href="{{ url_for('register_organization') }}">Organization registration</a>{% endif %}</nav>
+{% with messages = get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ 'error' if category == 'error' else '' }}">{{ message }}</div>{% endfor %}{% endwith %}
+<main>{% block content %}{% endblock %}</main></body></html>
