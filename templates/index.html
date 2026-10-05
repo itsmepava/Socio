@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>Membership Platform</h1><p>A local prototype for organization membership programmes.</p>{% if g.user and g.user.role == 'member' %}<p>Member features arrive in a later milestone.</p>{% endif %}{% endblock %}
