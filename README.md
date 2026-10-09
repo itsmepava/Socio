@@ -73,47 +73,42 @@ To start the app manually instead, use the steps below.
 
 Open http://127.0.0.1:5000. Use synthetic data only.
 
-## Host a temporary team preview on Railway
+## Share a temporary team preview with GitHub Codespaces
 
-Railway can host Socio at a public URL independently of your laptop. New accounts currently receive a free trial with up to $5 of usage for 30 days and no credit card. After the trial, the Free plan includes $1 of monthly usage credit; when credits are exhausted, Railway stops workloads. The service and volume use this credit, so this is a temporary team preview, not permanent free hosting. Check the current [Railway trial](https://docs.railway.com/pricing/free-trial), [pricing](https://docs.railway.com/pricing/plans), and [volume limits](https://docs.railway.com/volumes/reference) before deploying. Do not add a payment method or upgrade if you need to keep it card-free.
+Codespaces lets teammates run Socio from the GitHub repository without installing Python on their own computers. It is a development preview: the app stops when the Codespace stops, and its local SQLite database and uploaded images are not durable production storage.
 
-### Prepare the repository
+### Update the repository first
 
-Upload the current project files to your GitHub repository before connecting Railway. Include `railway.json`, `requirements.txt`, and the app files. Do not upload `.venv`, `.git`, `instance`, database files, `.env`, or passwords. Railway reads `railway.json` to initialize the SQLite schema, run Gunicorn, and check `/healthz`.
+1. Upload the contents of this release folder to the root of your GitHub repository, replacing the older app files. Keep the repository structure intact (`app.py`, `requirements.txt`, `templates/`, and `static/` should be at the repository root).
+2. Do not upload `.venv`, `.git`, `instance/`, database files, `.env`, or any secrets.
+3. Commit the update to the `main` branch.
 
-### Deploy
+### Start Socio in a new Codespace
 
-1. Sign up at [Railway](https://railway.com/) and connect your GitHub account. Railway says this trial does not require a credit card. Link GitHub to request verification for full trial network access; limited trials can restrict outbound connections, which can affect email.
-2. Create a project from the `membership-platform-v1` GitHub repository and deploy its `main` branch. Railway detects Python and installs `requirements.txt`.
-3. In the app service, add a volume mounted at `/data`. Socio will store its SQLite database and uploaded organization/event images there. The trial/free volume capacity is 0.5 GB.
-4. Generate a Railway public domain in the service's **Settings → Networking** area. Set the following service variables in **Variables**. Keep secrets in Railway only:
+Create a new Codespace from the repository's `main` branch after the commit finishes. An existing Codespace keeps its own checkout and can still show the older app; either pull the new commit there or create a fresh Codespace.
 
-| Variable | Value |
-| --- | --- |
-| `SECRET_KEY` | A unique, randomly generated secret |
-| `DATABASE_URL` | `sqlite:////data/membership.db` |
-| `ORGANIZATION_LOGO_FOLDER` | `/data/organization-logos` |
-| `PUBLIC_BASE_URL` | The HTTPS Railway domain generated for the service |
-| `SESSION_COOKIE_SECURE` | `1` |
-| `DEV_EMAIL_PREVIEW` | `0` |
-| `SHOW_PLATFORM_ADMIN_LINK` | `0` |
-| `MAIL_SERVER` | `smtp.gmail.com` for a Gmail SMTP trial, or your SMTP provider |
-| `MAIL_PORT` | `587` |
-| `MAIL_USERNAME` / `MAIL_PASSWORD` | SMTP account and app password, stored as private variables |
-| `MAIL_FROM` | A sender address accepted by that provider |
-| `MAIL_USE_TLS` | `1` |
+In the Codespaces terminal, run:
 
-   For Gmail, use an app password with 2-Step Verification enabled. After setting the variables, redeploy so Socio starts with its public URL and email settings. Confirmation emails link back to the Railway domain.
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+export SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+export DATABASE_URL=sqlite:///membership.db
+export PUBLIC_BASE_URL=http://127.0.0.1:5001
+export DEV_EMAIL_PREVIEW=1
+export SHOW_PLATFORM_ADMIN_LINK=1
+python -m flask --app 'app:create_app' init-db
+python -m flask --app 'app:create_app' seed-demo
+python -m flask --app 'app:create_app' create-admin
+python -m flask --app 'app:create_app' run --host 0.0.0.0 --port 5001
+```
 
-5. Install and log in to the Railway CLI, link it to this project, then create the first platform admin in the running service:
+The setup commands for demo data and the platform administrator are for a fresh database. If you already created them in that Codespace, skip those commands. Choose credentials when prompted; Socio has no default admin password. Keep the terminal running. Open the **Ports** tab, set port `5001` visibility to **Public** only if your team needs to access it, and share the forwarded HTTPS URL. Anyone with that URL can reach the app, so use test data and strong account passwords.
 
-   ```powershell
-   railway ssh -- flask --app 'app:create_app' create-admin
-   ```
+`DEV_EMAIL_PREVIEW=1` prints email-confirmation links to the server terminal. Those links use localhost and work only in that Codespace. To let teammates confirm new accounts through email, configure SMTP and set `PUBLIC_BASE_URL` to the forwarded HTTPS URL, then set `DEV_EMAIL_PREVIEW=0`. Keep SMTP credentials and `SECRET_KEY` private. For a public preview, set `SESSION_COOKIE_SECURE=1`.
 
-   The command prompts for the admin email and password. Then sign in at the public Railway URL, register an organization, and approve it from the platform admin area. Team members can register after SMTP is configured.
-
-The demo uses one app instance and SQLite on a persistent volume. The free/trial volume is small, and its data can be deleted after the trial expires. Export anything you need to keep. Use synthetic data; payments remain simulated. Before consumer use, move to a supported production database, add managed backups and migrations, and complete the security and operational reviews described below.
+A Codespace is designed for development and team testing, not always-on consumer hosting. Its local database and uploaded images can be lost when the Codespace is deleted. Use synthetic data and simulated payments only.
 
 ## Try the end-to-end local demo
 

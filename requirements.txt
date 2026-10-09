@@ -4,5 +4,4 @@ Flask-WTF==1.2.2
 argon2-cffi==25.1.0
 Flask-Limiter==3.12
 Pillow==12.3.0
-gunicorn>=23,<24; sys_platform != "win32"
 pytest==8.4.1
